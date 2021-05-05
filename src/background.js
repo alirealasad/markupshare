@@ -1,21 +1,49 @@
-'use strict';
+import axios from "axios";
 
-// With background scripts you can communicate with popup
-// and contentScript files.
-// For more information on background script,
-// See https://developer.chrome.com/extensions/background_pages
+function GetHTML(info, tab) {
+  chrome.tabs.sendMessage(tab.id, "GetHTML");
+}
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'GREETINGS') {
-    const message = `Hi ${
-      sender.tab ? 'Con' : 'Pop'
-    }, my name is Bac. I am from Background. It's great to hear from you.`;
+const API_URL = "https://markupshare.herokuapp.com/token/";
 
-    // Log message coming from the `request` parameter
-    console.log(request.payload.message);
-    // Send a response message
-    sendResponse({
-      message,
-    });
+var TOKEN = "";
+
+chrome.storage.sync.get(["token"], function (result) {
+  TOKEN = result.token;
+});
+
+chrome.storage.onChanged.addListener(function (changes, namespace) {
+  if (changes.token) {
+    TOKEN = changes.token.newValue;
   }
+});
+
+async function sendData(msg) {
+  const response = await axios.post(API_URL + TOKEN, {
+    data: msg,
+  });
+  return response;
+}
+
+chrome.contextMenus.create({
+  id: "send-markup",
+  title: "Send Markup",
+  onclick: GetHTML,
+});
+
+chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+  if (msg.action === "SendHTML") {
+    sendData(msg.data)
+      .then((res) => {
+        sendResponse({ msg: "Received the links" });
+      })
+      .catch((err) => {
+        sendResponse({ msg: err.message });
+      });
+  }
+  return true;
+});
+
+chrome.commands.onCommand.addListener(function (command, tab) {
+  GetHTML(command, tab);
 });
