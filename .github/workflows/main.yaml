@@ -20,7 +20,7 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           PUBLIC_KEY: ${{ secrets.PUBLIC_KEY }}
       - name: ziping the files
-      - uses: papeloto/action-zip@v1
+        uses: papeloto/action-zip@v1
         with:
           files: build/
           dest: markupshare.zip
